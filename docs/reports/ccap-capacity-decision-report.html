@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Keutamaan Tindakan Kapasiti CCAP</title>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #52606d;
+      --line: #d9e2ec;
+      --paper: #ffffff;
+      --wash: #f5f7fa;
+      --green: #166534;
+      --blue: #1d4ed8;
+      --amber: #b45309;
+      --red: #b91c1c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--wash);
+      font: 16px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 24px 64px;
+    }
+
+    .report {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+    }
+
+    header {
+      padding: 36px 40px 28px;
+      background: #0f3b2a;
+      color: #fff;
+    }
+
+    header p {
+      margin: 8px 0 0;
+      color: #d1fae5;
+      max-width: 760px;
+    }
+
+    h1, h2, h3 { line-height: 1.15; margin: 0; }
+    h1 { font-size: clamp(2rem, 5vw, 3rem); }
+    h2 { font-size: 1.35rem; margin-bottom: 12px; }
+    h3 { font-size: 1rem; margin-bottom: 6px; }
+
+    section {
+      padding: 30px 40px;
+      border-top: 1px solid var(--line);
+    }
+
+    .summary ul, .recommendations ol, .questions ul {
+      margin: 0;
+      padding-left: 22px;
+    }
+
+    .summary li, .recommendations li, .questions li {
+      margin: 10px 0;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 18px;
+      background: #f8fafc;
+    }
+
+    .kpi .value {
+      display: block;
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: 0;
+      color: var(--green);
+    }
+
+    .kpi .label {
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+    }
+
+    .note {
+      color: var(--muted);
+      margin: 0 0 18px;
+    }
+
+    .risk-bars {
+      display: grid;
+      gap: 11px;
+      margin-top: 18px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 128px 1fr 88px;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .track {
+      height: 16px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--green);
+    }
+
+    .fill.critical { background: var(--red); }
+    .fill.watch { background: var(--amber); }
+    .fill.ok { background: var(--blue); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      background: #f8fafc;
+    }
+
+    .status {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .status.critical { color: var(--red); background: #fee2e2; }
+    .status.watch { color: var(--amber); background: #fef3c7; }
+    .status.ok { color: var(--green); background: #dcfce7; }
+
+    .population {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      align-items: end;
+      min-height: 250px;
+      margin-top: 22px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .pop-year {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      align-items: end;
+      min-height: 210px;
+      position: relative;
+    }
+
+    .pop-year span {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -28px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .pop-bar {
+      border-radius: 8px 8px 0 0;
+      min-height: 24px;
+    }
+
+    .normal { background: #94a3b8; }
+    .injected { background: var(--blue); }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 42px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .legend b {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+
+    .caveats {
+      background: #fff7ed;
+      color: #431407;
+    }
+
+    @media (max-width: 760px) {
+      main { padding: 18px 12px 40px; }
+      header, section { padding: 24px 18px; }
+      .kpis { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 1fr; gap: 6px; }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+      .population { grid-template-columns: 1fr; gap: 32px; }
+      .pop-year { min-height: 160px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <article class="report">
+      <header>
+        <h1>Keutamaan Tindakan Kapasiti CCAP</h1>
+        <p>Laporan keputusan berasaskan data PostgreSQL hidup CCAP. Dijana pada 11 Jun 2026, 2:28 PM MYT.</p>
+      </header>
+
+      <section class="summary">
+        <h2>Executive Summary</h2>
+        <ul>
+          <li><strong>Lojing perlu intervensi segera.</strong> Ia satu-satunya kawasan kritikal, dengan purata ECC <strong>2,588.8</strong>, iaitu <strong>788.8 mata melebihi</strong> ambang kritikal yang dilaksanakan.</li>
+          <li><strong>Ulu Jelai dan Batang Padang ialah keutamaan pencegahan.</strong> Kedua-duanya hanya <strong>29.42</strong> dan <strong>98.37 mata</strong> di bawah ambang kritikal, tetapi puncanya berbeza.</li>
+          <li><strong>Tekanan penduduk akan membesarkan risiko.</strong> Senario suntikan mencapai <strong>163,993 orang pada 2040</strong>, iaitu <strong>23,459 orang</strong> melebihi trajektori normal.</li>
+        </ul>
+      </section>
+
+      <section>
+        <div class="kpis">
+          <div class="kpi">
+            <span class="label">Purata ECC</span>
+            <span class="value">1,318.86</span>
+            <span>indeks kapasiti</span>
+          </div>
+          <div class="kpi">
+            <span class="label">Kawasan Kritikal</span>
+            <span class="value">1</span>
+            <span>Lojing</span>
+          </div>
+          <div class="kpi">
+            <span class="label">Hampir Kritikal</span>
+            <span class="value">2</span>
+            <span>Ulu Jelai, Batang Padang</span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Risiko Tertumpu Pada Satu Kawasan Kritikal</h2>
+        <p class="note">Ambang kritikal yang dilaksanakan ialah purata ECC 1,800. Bar menunjukkan purata ECC kawasan.</p>
+        <div class="risk-bars" aria-label="Purata ECC mengikut kawasan">
+          <div class="bar-row"><strong>Lojing</strong><div class="track"><div class="fill critical" style="width:100%"></div></div><span>2,588.8</span></div>
+          <div class="bar-row"><strong>Ulu Jelai</strong><div class="track"><div class="fill watch" style="width:68.4%"></div></div><span>1,770.6</span></div>
+          <div class="bar-row"><strong>Batang Padang</strong><div class="track"><div class="fill watch" style="width:65.7%"></div></div><span>1,701.6</span></div>
+          <div class="bar-row"><strong>Ringlet</strong><div class="track"><div class="fill watch" style="width:62.4%"></div></div><span>1,615.1</span></div>
+          <div class="bar-row"><strong>Tanah Rata</strong><div class="track"><div class="fill watch" style="width:62.4%"></div></div><span>1,615.1</span></div>
+          <div class="bar-row"><strong>Hulu Telom</strong><div class="track"><div class="fill watch" style="width:62.4%"></div></div><span>1,615.1</span></div>
+          <div class="bar-row"><strong>Sungai Raia</strong><div class="track"><div class="fill ok" style="width:27.4%"></div></div><span>710.2</span></div>
+          <div class="bar-row"><strong>Hulu Kinta</strong><div class="track"><div class="fill ok" style="width:27.4%"></div></div><span>710.2</span></div>
+          <div class="bar-row"><strong>Teja</strong><div class="track"><div class="fill ok" style="width:15.0%"></div></div><span>388.6</span></div>
+          <div class="bar-row"><strong>Kampar</strong><div class="track"><div class="fill ok" style="width:15.0%"></div></div><span>388.6</span></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Keutamaan Kawasan</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Keutamaan</th>
+              <th>Kawasan</th>
+              <th>Status</th>
+              <th>Purata ECC</th>
+              <th>Jarak ke kritikal</th>
+              <th>Tindakan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>Lojing</td><td><span class="status critical">Kritikal</span></td><td>2,588.80</td><td>-788.80</td><td>Intervensi segera; audit pertanian dan pembangunan Potensi.</td></tr>
+            <tr><td>2</td><td>Ulu Jelai</td><td><span class="status watch">Sederhana</span></td><td>1,770.58</td><td>29.42</td><td>Watchlist; guardrail perumahan sebelum ambang.</td></tr>
+            <tr><td>3</td><td>Batang Padang</td><td><span class="status watch">Sederhana</span></td><td>1,701.63</td><td>98.37</td><td>Watchlist; kawal komersial dan institusi.</td></tr>
+            <tr><td>4</td><td>Ringlet</td><td><span class="status watch">Sederhana</span></td><td>1,615.10</td><td>184.90</td><td>Pemantauan berkala dan kekalkan kawalan.</td></tr>
+            <tr><td>5</td><td>Tanah Rata</td><td><span class="status watch">Sederhana</span></td><td>1,615.10</td><td>184.90</td><td>Pemantauan berkala dan kekalkan kawalan.</td></tr>
+            <tr><td>6</td><td>Hulu Telom</td><td><span class="status watch">Sederhana</span></td><td>1,615.10</td><td>184.90</td><td>Pemantauan berkala dan kekalkan kawalan.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Pendorong Utama Kawasan Keutamaan</h2>
+        <p class="note">Punca risiko tidak seragam. Tindakan perlu ikut kawasan dan guna tanah dominan.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Kawasan</th>
+              <th>Guna tanah</th>
+              <th>Rekod</th>
+              <th>Purata ECC</th>
+              <th>Implikasi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Batang Padang</td><td>Komersial</td><td>6</td><td>5,594.50</td><td>Pendorong terbesar; kawalan komersial segera.</td></tr>
+            <tr><td>Lojing</td><td>Pertanian</td><td>6</td><td>3,510.17</td><td>Pendorong terbesar; audit pertanian terperinci.</td></tr>
+            <tr><td>Batang Padang</td><td>Institusi dan Kemudahan Masyarakat</td><td>6</td><td>2,471.17</td><td>Pendorong kedua; semak projek institusi.</td></tr>
+            <tr><td>Ulu Jelai</td><td>Perumahan</td><td>6</td><td>2,005.00</td><td>Pendorong terbesar; guardrail perumahan.</td></tr>
+            <tr><td>Ulu Jelai</td><td>Pertanian</td><td>6</td><td>1,107.33</td><td>Pendorong kedua; kawal pertumbuhan pertanian.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Senario Penduduk Menambah Tekanan 23.5k Orang Menjelang 2040</h2>
+        <p class="note">Bar kelabu ialah trajektori normal; bar biru ialah senario suntikan.</p>
+        <div class="population" aria-label="Senario penduduk 2022 hingga 2040">
+          <div class="pop-year"><div class="pop-bar normal" style="height:77%"></div><div class="pop-bar injected" style="height:77%"></div><span>2022</span></div>
+          <div class="pop-year"><div class="pop-bar normal" style="height:79%"></div><div class="pop-bar injected" style="height:81%"></div><span>2025</span></div>
+          <div class="pop-year"><div class="pop-bar normal" style="height:81%"></div><div class="pop-bar injected" style="height:87%"></div><span>2030</span></div>
+          <div class="pop-year"><div class="pop-bar normal" style="height:84%"></div><div class="pop-bar injected" style="height:93%"></div><span>2035</span></div>
+          <div class="pop-year"><div class="pop-bar normal" style="height:86%"></div><div class="pop-bar injected" style="height:100%"></div><span>2040</span></div>
+        </div>
+        <div class="legend">
+          <span><b class="normal"></b>Normal</span>
+          <span><b class="injected"></b>Suntikan</span>
+        </div>
+      </section>
+
+      <section class="recommendations">
+        <h2>Cadangan Keutamaan Tindakan</h2>
+        <ol>
+          <li><strong>Intervensi Lojing sekarang:</strong> ketatkan semakan pembangunan baharu dan audit aktiviti pertanian serta pembangunan Potensi.</li>
+          <li><strong>Wujudkan watchlist Ulu Jelai dan Batang Padang:</strong> tetapkan pencetus semakan sebelum purata ECC mencapai 1,800.</li>
+          <li><strong>Pantau Ringlet, Tanah Rata dan Hulu Telom:</strong> kekalkan kawalan semasa dan semak perubahan ECC secara berkala.</li>
+          <li><strong>Tetapkan tadbir urus metrik:</strong> sahkan definisi rasmi PCC/RCC/ECC, formula sumber, dan ambang status.</li>
+          <li><strong>Tangguhkan keputusan berasaskan optimum:</strong> selesaikan dahulu perbezaan skala dan semantik medan optimum.</li>
+        </ol>
+      </section>
+
+      <section class="questions">
+        <h2>Soalan Seterusnya</h2>
+        <ul>
+          <li>Adakah ambang ECC 900 dan 1,800 telah diluluskan sebagai dasar, atau hanya peraturan paparan MVP?</li>
+          <li>Apakah formula dan unit rasmi PCC, RCC dan ECC?</li>
+          <li>Bolehkah kawasan kajian penduduk dipetakan secara sah kepada kawasan ECC?</li>
+          <li>Apakah medan optimum yang patut digunakan untuk perbandingan semasa-lawan-optimum?</li>
+        </ul>
+      </section>
+
+      <section class="caveats">
+        <h2>Caveats and Assumptions</h2>
+        <p>Cadangan ini menggunakan logik yang sedang dilaksanakan dalam CCAP: status berdasarkan purata ECC kawasan dan ambang 900/1,800. Formula serta pengembangan rasmi PCC/RCC/ECC belum ditemui dalam dokumentasi yang disemak, jadi cadangan kawalan ialah provisional sehingga metodologi diluluskan. Data terperinci mengandungi 466 rekod; 4 nilai ECC dan 13 nilai PCC/RCC adalah kosong. Import terkini selesai pada 11 Jun 2026 dengan 1,062 baris sumber dikemas kini.</p>
+      </section>
+    </article>
+  </main>
+</body>
+</html>
