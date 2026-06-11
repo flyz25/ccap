@@ -1,0 +1,49 @@
+name: Deploy Demo
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ccap-demo
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_HOST: ${{ secrets.CCAP_DEPLOY_HOST }}
+          SSH_PORT: ${{ secrets.CCAP_DEPLOY_PORT }}
+          SSH_USER: ${{ secrets.CCAP_DEPLOY_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.CCAP_DEPLOY_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          : "${SSH_HOST:?Missing CCAP_DEPLOY_HOST secret}"
+          : "${SSH_USER:?Missing CCAP_DEPLOY_USER secret}"
+          : "${SSH_PRIVATE_KEY:?Missing CCAP_DEPLOY_SSH_KEY secret}"
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/ccap_deploy_key
+          chmod 600 ~/.ssh/ccap_deploy_key
+          ssh-keyscan -p "${SSH_PORT:-22}" "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy on server
+        env:
+          SSH_HOST: ${{ secrets.CCAP_DEPLOY_HOST }}
+          SSH_PORT: ${{ secrets.CCAP_DEPLOY_PORT }}
+          SSH_USER: ${{ secrets.CCAP_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          ssh \
+            -i ~/.ssh/ccap_deploy_key \
+            -p "${SSH_PORT:-22}" \
+            -o IdentitiesOnly=yes \
+            "$SSH_USER@$SSH_HOST" \
+            'bash /srv/apps/demo-klyr/deploy.sh'
