@@ -1,6 +1,6 @@
 # Architecture
 
-CCAP is split into independently deployable frontend, backend, and database layers. The MVP keeps implementation modular so future PCC, RCC, ECC, scenario, GIS, GeoServer, ArcGIS, AI prediction, and DSS modules can be added with minimal refactoring.
+CCAP is split into independently deployable frontend, backend, business intelligence, and database layers. The MVP keeps implementation modular so future PCC, RCC, ECC, scenario, GIS, GeoServer, ArcGIS, AI prediction, and DSS modules can be added with minimal refactoring.
 
 ```mermaid
 flowchart LR
@@ -9,11 +9,24 @@ flowchart LR
   B --> S[Services Layer]
   S --> R[Repository Layer]
   R --> DB[(PostgreSQL 17 + PostGIS)]
+  U --> BI[Apache Superset]
+  BI --> AV[Analytics Views]
+  AV --> DB
   B --> ETL[Excel ETL]
   ETL --> DB
   XLSX[Excel Workbook] --> ETL
   PG[pgAdmin] --> DB
 ```
+
+## Business Intelligence
+
+Apache Superset uses a separate `superset_metadata` database for its configuration while querying the CCAP database through the `CCAP PostgreSQL` connection. Docker bootstrap scripts create durable analytics views, register datasets, and publish the `CCAP Executive Overview` dashboard.
+
+| Component | Path | Responsibility |
+| --- | --- | --- |
+| Superset image and configuration | `docker/superset` | Superset runtime, metadata initialization, and CCAP connection |
+| Analytics views | `docker/superset/create_analytics_views.py` | Stable, aggregated data sources for executive charts |
+| Dashboard bootstrap | `docker/superset/register_executive_dashboard.py` | Idempotent chart and dashboard publication |
 
 ## Backend Layers
 
@@ -45,4 +58,3 @@ flowchart LR
 - GeoServer/ArcGIS: expose PostGIS layers through dedicated integration services.
 - WMS/WFS/WMTS: extend `MapService.layers()` and Nginx proxy rules.
 - AI prediction/DSS: add model output tables and dashboard route modules.
-

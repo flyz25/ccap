@@ -56,6 +56,71 @@ services:
     depends_on:
       - backend
 
+  superset-db-init:
+    image: postgis/postgis:17-3.5
+    container_name: ccap-superset-db-init
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: ccap
+      PGPASSWORD: ccap
+      SUPERSET_METADATA_DB: superset_metadata
+    volumes:
+      - ./docker/superset/create_metadata_db.sh:/opt/ccap/create_metadata_db.sh:ro
+    entrypoint: ["/bin/sh", "/opt/ccap/create_metadata_db.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  superset-init:
+    build:
+      context: .
+      dockerfile: docker/superset/Dockerfile
+    container_name: ccap-superset-init
+    environment:
+      SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-ccap-local-superset-secret-change-before-deployment}
+      SUPERSET_METADATA_DATABASE_URI: postgresql+psycopg2://ccap:ccap@postgres:5432/superset_metadata
+      CCAP_DATABASE_URI: postgresql+psycopg2://ccap:ccap@postgres:5432/ccap
+      SUPERSET_ADMIN_USERNAME: ${SUPERSET_ADMIN_USERNAME:-admin}
+      SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD:-password123}
+      SUPERSET_ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL:-admin@ccap.gov.my}
+    volumes:
+      - ccap_superset_home:/app/superset_home
+    command: ["/bin/sh", "/opt/ccap/init_superset.sh"]
+    depends_on:
+      superset-db-init:
+        condition: service_completed_successfully
+    restart: "no"
+
+  superset:
+    build:
+      context: .
+      dockerfile: docker/superset/Dockerfile
+    container_name: ccap-superset
+    environment:
+      SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-ccap-local-superset-secret-change-before-deployment}
+      SUPERSET_METADATA_DATABASE_URI: postgresql+psycopg2://ccap:ccap@postgres:5432/superset_metadata
+      CCAP_DATABASE_URI: postgresql+psycopg2://ccap:ccap@postgres:5432/ccap
+      SERVER_WORKER_AMOUNT: 2
+      GUNICORN_TIMEOUT: 120
+    ports:
+      - "8088:8088"
+    volumes:
+      - ccap_superset_home:/app/superset_home
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8088/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
 volumes:
   ccap_postgres_data:
   ccap_pgadmin_data:
+  ccap_superset_home:

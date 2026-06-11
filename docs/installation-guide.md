@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Docker Desktop or Docker Engine with Compose
-- At least 4 GB free RAM for PostgreSQL, backend, and Angular/Nginx build
+- At least 6 GB free RAM for PostgreSQL, Superset, backend, and Angular/Nginx build
 - The supplied Excel workbook in the project root:
   `CEKAL DATABASE - FINALIZED 11_7_2025.xlsx`
 
@@ -24,6 +24,7 @@ The first run builds Python and Angular images, creates the PostGIS database, ru
 | Swagger UI | http://localhost:8001/docs | OpenAPI documentation |
 | PostgreSQL | localhost:5432 | PostgreSQL 17 + PostGIS |
 | pgAdmin | http://localhost:5050 | Database administration |
+| Apache Superset | http://localhost:8088 | Self-service BI, SQL Lab, charts, and dashboards |
 
 pgAdmin login:
 
@@ -37,6 +38,31 @@ Database connection inside pgAdmin:
 - Database: `ccap`
 - Username: `ccap`
 - Password: `ccap`
+
+Superset login:
+
+- Username: `admin`
+- Password: `password123`
+
+The Superset initialization container automatically:
+
+- creates a separate `superset_metadata` database
+- runs Superset database migrations
+- creates the local admin account
+- registers the CCAP PostgreSQL analytics connection
+- registers the main CCAP analytics tables as Superset datasets
+
+The registered analytics connection uses:
+
+```text
+postgresql+psycopg2://ccap:ccap@postgres:5432/ccap
+```
+
+The bootstrap also creates and publishes:
+
+- Dashboard: `CCAP Executive Overview`
+- URL: http://localhost:8088/superset/dashboard/ccap-executive-overview/
+- KPI, capacity comparison, area ranking, population trend, status, and land-use charts
 
 ## Demo Login
 

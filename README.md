@@ -7,6 +7,7 @@ CCAP is the local MVP for the Carrying Capacity Analytics Platform. It imports t
 - Frontend: Angular 20, Angular Material, TailwindCSS, OpenLayers, Apache ECharts
 - Backend: FastAPI, SQLAlchemy, Alembic, Pydantic
 - Database: PostgreSQL 17 with PostGIS
+- Business intelligence: Apache Superset 6
 - Infrastructure: Docker Compose, Nginx, pgAdmin
 
 ## Quick Start
@@ -20,6 +21,7 @@ Open:
 - CCAP dashboard: http://localhost:8080
 - FastAPI Swagger UI: http://localhost:8001/docs
 - pgAdmin: http://localhost:5050
+- Apache Superset: http://localhost:8088
 
 Demo users all use password `password123`:
 

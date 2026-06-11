@@ -21,6 +21,15 @@ The database uses PostgreSQL 17 with PostGIS enabled.
 | KETEPUAN | `ketepuan` |
 | OVERALL POPULATION | `overall_population` |
 
+## Superset Analytics Views
+
+| View | Purpose |
+| --- | --- |
+| `superset_executive_kpi` | One-row executive KPI summary |
+| `superset_executive_area` | PCC, RCC, ECC, population, and status by area |
+| `superset_population_trend` | Time-ready population growth series |
+| `superset_land_use_summary` | Aggregated land-use area and capacity metrics |
+
 ## Schema Diagram
 
 ```mermaid
