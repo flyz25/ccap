@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="PLANMalaysia">
+  <defs>
+    <linearGradient id="gold" x1="0" x2="1">
+      <stop offset="0" stop-color="#f8d45c"/>
+      <stop offset="1" stop-color="#c9921e"/>
+    </linearGradient>
+  </defs>
+  <path d="M48 6 58 22l18 4-12 14 2 19-18-8-18 8 2-19-12-14 18-4Z" fill="url(#gold)" stroke="#8b6814" stroke-width="2"/>
+  <path d="M28 34h40v25c0 13-9 22-20 28-11-6-20-15-20-28Z" fill="#d71920" stroke="#f8d45c" stroke-width="3"/>
+  <path d="M48 35v49" stroke="#f8d45c" stroke-width="4"/>
+  <path d="M31 48h34M31 61h34" stroke="#ffffff" stroke-width="4"/>
+  <path d="M18 35c-7 9-7 22 1 32M78 35c7 9 7 22-1 32" fill="none" stroke="#f8d45c" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="48" cy="22" r="7" fill="#173B2F" stroke="#f8d45c" stroke-width="3"/>
+</svg>

@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    container_name: ccap-postgres
+    environment:
+      POSTGRES_DB: ccap
+      POSTGRES_USER: ccap
+      POSTGRES_PASSWORD: ccap
+    ports:
+      - "5432:5432"
+    volumes:
+      - ccap_postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ccap -d ccap"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: ccap-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@ccap.gov.my
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ccap_pgadmin_data:/var/lib/pgadmin
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: ccap-backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://ccap:ccap@postgres:5432/ccap
+      JWT_SECRET_KEY: change-this-secret-before-deployment
+      SOURCE_EXCEL_PATH: /app/CEKAL DATABASE - FINALIZED 11_7_2025.xlsx
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: ccap-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  ccap_postgres_data:
+  ccap_pgadmin_data:

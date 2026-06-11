@@ -1,0 +1,322 @@
+@import "@angular/material/prebuilt-themes/azure-blue.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --ccap-navy: #173B2F;
+  --ccap-blue: #2E7D32;
+  --ccap-green: #4CAF50;
+  --ccap-light-green: #81C784;
+  --ccap-amber: #FBC02D;
+  --ccap-critical: #D32F2F;
+  --ccap-mist: #F5F7FA;
+  --ccap-line: #E5E7EB;
+  --ccap-text: #212121;
+  --mdc-theme-primary: #2E7D32;
+  --mat-sys-primary: #2E7D32;
+  --ccap-sidebar: #003d2b;
+  --ccap-sidebar-dark: #003522;
+  --ccap-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--ccap-mist);
+  color: var(--ccap-text);
+  letter-spacing: 0;
+  font-size: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.mat-mdc-card,
+.mat-mdc-menu-panel,
+.mat-mdc-dialog-container .mdc-dialog__surface {
+  border-radius: 8px !important;
+}
+
+.mat-mdc-unelevated-button.mat-primary,
+.mat-mdc-raised-button.mat-primary {
+  --mdc-filled-button-container-color: var(--ccap-blue);
+  --mdc-filled-button-label-text-color: #ffffff;
+  --mdc-protected-button-container-color: var(--ccap-blue);
+  --mdc-protected-button-label-text-color: #ffffff;
+}
+
+.mat-mdc-form-field.mat-focused,
+.mat-mdc-select-arrow {
+  --mdc-outlined-text-field-focus-outline-color: var(--ccap-green);
+  --mdc-outlined-text-field-focus-label-text-color: var(--ccap-blue);
+}
+
+.mat-mdc-form-field {
+  width: 100%;
+  --mat-form-field-container-height: 56px;
+}
+
+.mdc-notched-outline__notch {
+  border-left: 0 !important;
+  border-right: 0 !important;
+}
+
+.mat-mdc-text-field-wrapper {
+  background: #ffffff;
+}
+
+.mat-mdc-form-field-icon-prefix,
+.mat-mdc-form-field-icon-suffix {
+  color: #4b6178;
+}
+
+.page-title {
+  font-size: 32px;
+  line-height: 1.12;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: 0;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid var(--ccap-line);
+  border-radius: 10px;
+  box-shadow: var(--ccap-shadow);
+}
+
+.metric-label {
+  color: #5F6B63;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metric-value {
+  color: var(--ccap-navy);
+  font-size: clamp(21px, 1.45vw, 30px);
+  line-height: 1.08;
+  font-weight: 800;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.chart-host {
+  display: block;
+  height: 320px;
+  min-height: 260px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.status-suitable {
+  background: rgba(46, 125, 50, 0.12);
+  color: #2E7D32;
+}
+
+.status-moderate {
+  background: rgba(251, 192, 45, 0.18);
+  color: #8A6500;
+}
+
+.status-critical {
+  background: rgba(211, 47, 47, 0.12);
+  color: #D32F2F;
+}
+
+.page-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 2px;
+}
+
+.page-subtitle {
+  margin-top: 6px;
+  color: #005b2e;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.filter-card {
+  width: 220px;
+  min-height: 68px;
+  border: 1px solid var(--ccap-line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px 14px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+}
+
+.filter-label {
+  display: block;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.filter-select {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  border: 1px solid var(--ccap-line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0 16px;
+  color: #173B2F;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+}
+
+.action-button-primary {
+  background: #006b35;
+  border-color: #006b35;
+  color: #ffffff;
+}
+
+.kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 112px;
+  overflow: hidden;
+  padding: 22px;
+}
+
+.kpi-card > div {
+  min-width: 0;
+}
+
+.kpi-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #43a047, #08752f);
+  color: #ffffff;
+  box-shadow: inset 0 -10px 18px rgba(0, 0, 0, 0.14);
+}
+
+.kpi-icon-danger {
+  background: linear-gradient(135deg, #ef4444, #c5161d);
+}
+
+.kpi-icon-blue {
+  background: linear-gradient(135deg, #2f80ed, #1454a8);
+}
+
+.kpi-icon-amber {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.kpi-icon-purple {
+  background: linear-gradient(135deg, #a855f7, #7e22ce);
+}
+
+.kpi-icon-teal {
+  background: linear-gradient(135deg, #14b8a6, #0f766e);
+}
+
+.kpi-icon-indigo {
+  background: linear-gradient(135deg, #6366f1, #4338ca);
+}
+
+.map-control-stack {
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  z-index: 5;
+  display: grid;
+  gap: 10px;
+}
+
+.map-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  border: 1px solid var(--ccap-line);
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+  font-weight: 800;
+}
+
+.legend-panel {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--ccap-line);
+  box-shadow: var(--ccap-shadow);
+  padding: 18px;
+}
+
+@media (max-width: 1024px) {
+  .page-header {
+    flex-direction: column;
+  }
+
+  .page-actions,
+  .filter-card {
+    width: 100%;
+  }
+}

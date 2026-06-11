@@ -1,0 +1,15 @@
+.git
+.agents
+.codex
+**/__pycache__
+**/.pytest_cache
+**/.angular
+**/node_modules
+frontend/dist
+backend/.venv
+*.pyc
+*.pyo
+*.pyd
+*.log
+CEKAL DATABASE - FINALIZED 11_7_2025.xlsx:Zone.Identifier
+

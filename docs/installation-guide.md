@@ -1,0 +1,68 @@
+# Installation Guide
+
+## Prerequisites
+
+- Docker Desktop or Docker Engine with Compose
+- At least 4 GB free RAM for PostgreSQL, backend, and Angular/Nginx build
+- The supplied Excel workbook in the project root:
+  `CEKAL DATABASE - FINALIZED 11_7_2025.xlsx`
+
+## Start The MVP
+
+```bash
+docker compose up -d
+```
+
+The first run builds Python and Angular images, creates the PostGIS database, runs migrations, seeds users, and imports the Excel workbook.
+
+## Services
+
+| Service | URL | Purpose |
+| --- | --- | --- |
+| Frontend | http://localhost:8080 | Angular dashboard served by Nginx |
+| Backend | http://localhost:8001 | FastAPI application |
+| Swagger UI | http://localhost:8001/docs | OpenAPI documentation |
+| PostgreSQL | localhost:5432 | PostgreSQL 17 + PostGIS |
+| pgAdmin | http://localhost:5050 | Database administration |
+
+pgAdmin login:
+
+- Email: `admin@ccap.gov.my`
+- Password: `admin`
+
+Database connection inside pgAdmin:
+
+- Host: `postgres`
+- Port: `5432`
+- Database: `ccap`
+- Username: `ccap`
+- Password: `ccap`
+
+## Demo Login
+
+All demo users use password `password123`.
+
+| Username | Role |
+| --- | --- |
+| `admin` | Admin |
+| `planner` | Planner |
+| `analyst` | Analyst |
+| `viewer` | Viewer |
+
+## Rebuild
+
+```bash
+docker compose up -d --build
+```
+
+## Stop
+
+```bash
+docker compose down
+```
+
+To remove database volumes:
+
+```bash
+docker compose down -v
+```

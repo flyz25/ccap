@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 286 54" role="img" aria-label="PLANMalaysia">
+  <rect x="0.5" y="0.5" width="285" height="53" rx="10" fill="#ffffff"/>
+  <text
+    x="17"
+    y="40"
+    fill="#3fa044"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="39"
+    font-weight="900"
+    letter-spacing="-2.8"
+  >PLAN</text>
+  <text
+    x="115"
+    y="40"
+    fill="#000000"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="39"
+    font-weight="400"
+    letter-spacing="-2.7"
+  >Malaysia</text>
+</svg>
