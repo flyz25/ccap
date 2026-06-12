@@ -42,6 +42,10 @@ export class AuthService {
   }
 
   private loadUser(): User | null {
+    if (!this.token) {
+      localStorage.removeItem(USER_KEY);
+      return null;
+    }
     const raw = localStorage.getItem(USER_KEY);
     if (!raw) {
       return null;
@@ -54,4 +58,3 @@ export class AuthService {
     }
   }
 }
-

@@ -9,4 +9,9 @@ dist/
 *.log
 .agents/
 .codex/
+*.xlsx
+*.xls
+*.pdf
+LAPORAN RANCANGAN WILAYAH CEKAL/
 CEKAL DATABASE - FINALIZED 11_7_2025.xlsx:Zone.Identifier
+*:Zone.Identifier

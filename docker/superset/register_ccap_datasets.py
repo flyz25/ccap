@@ -11,6 +11,7 @@ DATASET_TABLES = (
     "superset_executive_area",
     "superset_population_trend",
     "superset_land_use_summary",
+    "superset_capacity_audit_summary",
 )
 
 app = create_app()

@@ -184,7 +184,22 @@ export class DataTableComponent implements OnChanges {
       normal_population_growth: "Pertumbuhan Penduduk",
       injected_population_growth: "Suntikan Penduduk",
       ecc_semasa: "ECC Semasa",
-      senario: "Senario"
+      senario: "Senario",
+      dataset_scope: "Set Data",
+      record_area: "Kawasan",
+      record_kawasan_kajian: "Kawasan Kajian",
+      source_row: "Baris Sumber",
+      stored_pcc: "PCC Workbook",
+      stored_rcc: "RCC Workbook",
+      stored_ecc: "ECC Workbook",
+      calculated_pcc: "PCC Kiraan",
+      calculated_rcc: "RCC Kiraan",
+      calculated_ecc: "ECC Kiraan",
+      pcc_delta: "Beza PCC",
+      rcc_delta: "Beza RCC",
+      ecc_delta: "Beza ECC",
+      status: "Status",
+      issue_code: "Isu"
     };
     return labels[column] ?? column.replaceAll("_", " ");
   }

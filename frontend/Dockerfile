@@ -3,7 +3,7 @@ FROM node:22-alpine AS build
 WORKDIR /app
 
 COPY frontend/package.json /app/package.json
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 COPY frontend /app
 RUN npm run build
@@ -14,4 +14,3 @@ COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/ccap-frontend/browser /usr/share/nginx/html
 
 EXPOSE 80
-

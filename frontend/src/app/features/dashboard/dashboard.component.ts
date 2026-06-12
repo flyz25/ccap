@@ -1,6 +1,8 @@
 import { CommonModule } from "@angular/common";
+import { HttpClient } from "@angular/common/http";
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
+import { Router } from "@angular/router";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatOptionModule } from "@angular/material/core";
@@ -10,19 +12,28 @@ import { forkJoin } from "rxjs";
 import GeoJSON from "ol/format/GeoJSON";
 import OlMap from "ol/Map";
 import View from "ol/View";
+import type Feature from "ol/Feature";
 import type { FeatureLike } from "ol/Feature";
+import type { Geometry } from "ol/geom";
 import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
 import { fromLonLat } from "ol/proj";
-import OSM from "ol/source/OSM";
 import VectorSource from "ol/source/Vector";
+import XYZ from "ol/source/XYZ";
 import { Circle as CircleStyle, Fill, Stroke, Style } from "ol/style";
+import { defaults as defaultControls } from "ol/control/defaults";
 
 import { DashboardOverview, KpiCard } from "../../core/models";
 import { ApiService, DatasetQuery } from "../../core/services/api.service";
 import { ChartCardComponent } from "../../shared/components/chart-card.component";
 
 type Row = Record<string, unknown>;
+type StudyAreaFeature = Feature<Geometry>;
+
+interface StudyAreaLegendItem {
+  name: string;
+  color: string;
+}
 
 interface AssessmentSummary {
   area: string;
@@ -31,6 +42,9 @@ interface AssessmentSummary {
   ecc: number;
   population: number;
   visitors: number;
+  load: number;
+  saturationPct: number;
+  capacityBalance: number;
   status: "Sesuai" | "Sederhana" | "Kritikal";
   statusClass: string;
   recommendation: string;
@@ -110,15 +124,40 @@ interface AssessmentSummary {
               <button class="map-control mt-3" type="button" title="Kembali ke paparan penuh" aria-label="Kembali ke paparan penuh" (click)="resetMapView()"><mat-icon>home</mat-icon></button>
               <button class="map-control" type="button" title="Togol lapisan titik" aria-label="Togol lapisan titik" (click)="togglePointLayer()"><mat-icon>layers</mat-icon></button>
             </div>
-            <div class="legend-panel absolute right-8 top-16 z-10 w-[220px]">
-              <div class="mb-4 text-sm font-extrabold uppercase text-ccap-navy">Petunjuk ECC</div>
-              <div class="space-y-4 text-sm font-semibold text-ccap-steel">
-                <div class="flex items-start gap-3"><span class="mt-1 h-4 w-4 rounded-full bg-[#16a34a]"></span><div><b class="text-ccap-blue">Sesuai</b><div>ECC rendah</div></div></div>
-                <div class="flex items-start gap-3"><span class="mt-1 h-4 w-4 rounded-full bg-[#FBC02D]"></span><div><b class="text-[#8A6500]">Sederhana</b><div>Perlu kawalan</div></div></div>
-                <div class="flex items-start gap-3"><span class="mt-1 h-4 w-4 rounded-full bg-[#D32F2F]"></span><div><b class="text-ccap-critical">Kritikal</b><div>Kawasan tepu</div></div></div>
+            <div class="absolute right-4 top-4 z-10">
+              <div class="legend-panel w-[176px] !p-3">
+                <div class="filter-label">Peta Asas</div>
+                <select class="filter-select" [(ngModel)]="selectedBaseMap" (ngModelChange)="setBaseMap($event)">
+                  <option>Satelit</option>
+                  <option>Topografi</option>
+                  <option>Jalan</option>
+                </select>
               </div>
-              <button class="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-ccap-blue">
-                <mat-icon class="!text-base">open_in_full</mat-icon>
+            </div>
+            <div class="legend-panel absolute bottom-4 right-4 z-10 w-[238px] !p-3">
+              <div class="mb-2 text-xs font-extrabold uppercase text-ccap-navy">Kawasan Kajian</div>
+              <div class="grid max-h-[132px] grid-cols-2 gap-1 overflow-auto pr-1 text-xs font-semibold text-ccap-steel">
+                <button
+                  *ngFor="let item of studyAreaLegend()"
+                  class="flex w-full min-w-0 items-center gap-2 rounded px-1.5 py-1 text-left transition hover:bg-white/80"
+                  [class.bg-white]="selectedStudyAreaName() === item.name"
+                  type="button"
+                  (click)="selectStudyAreaByName(item.name)"
+                >
+                  <span class="h-3 w-3 shrink-0 rounded-sm border border-white shadow" [style.background]="item.color"></span>
+                  <span class="truncate">{{ item.name }}</span>
+                </button>
+              </div>
+              <div class="mt-2 border-t border-ccap-line pt-2 text-[11px] font-semibold text-ccap-steel">
+                <div class="mb-1 font-extrabold uppercase text-ccap-navy">Titik ECC</div>
+                <div class="grid grid-cols-3 gap-1">
+                  <span class="inline-flex items-center gap-1"><span class="h-3 w-3 rounded-full bg-[#16a34a]"></span>Sesuai</span>
+                  <span class="inline-flex items-center gap-1"><span class="h-3 w-3 rounded-full bg-[#FBC02D]"></span>Sederhana</span>
+                  <span class="inline-flex items-center gap-1"><span class="h-3 w-3 rounded-full bg-[#D32F2F]"></span>Kritikal</span>
+                </div>
+              </div>
+              <button class="mt-3 inline-flex items-center gap-1.5 text-xs font-extrabold text-ccap-blue" type="button" (click)="openFullMap()">
+                <mat-icon class="!text-sm">open_in_full</mat-icon>
                 Lihat Peta Penuh
               </button>
             </div>
@@ -168,8 +207,17 @@ interface AssessmentSummary {
               <div class="text-xl font-extrabold text-ccap-navy">{{ summary.visitors | number: "1.0-0" }}</div>
             </div>
             <div class="rounded-md border border-ccap-line bg-ccap-mist p-3">
-              <div class="metric-label">Titik GIS</div>
-              <div class="text-xl font-extrabold text-ccap-navy">{{ mapFeatureCount() | number }}</div>
+              <div class="metric-label">Ketepuan</div>
+              <div class="text-xl font-extrabold text-ccap-navy">{{ summary.saturationPct | number: "1.0-2" }}%</div>
+            </div>
+          </div>
+          <div class="mt-4 rounded-md border border-ccap-line bg-ccap-mist p-3">
+            <div class="mb-2 flex justify-between text-xs font-extrabold uppercase text-ccap-steel">
+              <span>Beban {{ summary.load | number: "1.0-0" }}</span>
+              <span>Baki {{ summary.capacityBalance | number: "1.0-0" }}</span>
+            </div>
+            <div class="h-2 rounded-full bg-slate-200">
+              <div class="h-2 rounded-full" [style.background]="statusColor(summary.status)" [style.width.%]="minPercent(summary.saturationPct)"></div>
             </div>
           </div>
           <div class="mt-4 rounded-md border border-ccap-line bg-white p-3 text-sm font-semibold leading-6 text-ccap-steel">
@@ -191,7 +239,44 @@ interface AssessmentSummary {
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
+  private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
+  private readonly studyAreaSource = new VectorSource();
   private readonly source = new VectorSource();
+  private readonly studyAreaLayer = new VectorLayer({
+    source: this.studyAreaSource,
+    style: (feature: FeatureLike) => this.studyAreaStyle(feature)
+  });
+  private readonly imageryLayer = new TileLayer({
+    source: new XYZ({
+      attributions: "Tiles © Esri",
+      url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+    })
+  });
+  private readonly topoLayer = new TileLayer({
+    source: new XYZ({
+      attributions: "Topographic © Esri",
+      url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+    })
+  });
+  private readonly streetLayer = new TileLayer({
+    source: new XYZ({
+      attributions: "Streets © Esri",
+      url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
+    })
+  });
+  private readonly boundaryLabelLayer = new TileLayer({
+    source: new XYZ({
+      attributions: "Labels © Esri",
+      url: "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+    })
+  });
+  private readonly roadLabelLayer = new TileLayer({
+    source: new XYZ({
+      attributions: "Road labels © Esri",
+      url: "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}"
+    })
+  });
   private readonly layer = new VectorLayer({
     source: this.source,
     style: (feature: FeatureLike) => this.pointStyle(feature)
@@ -210,26 +295,80 @@ export class DashboardComponent implements OnInit, OnDestroy {
   readonly assessment = signal<AssessmentSummary | null>(null);
   readonly selectedFeature = signal<Row | null>(null);
   readonly mapFeatureCount = signal(0);
+  readonly studyAreaLegend = signal<StudyAreaLegendItem[]>([]);
+  readonly selectedStudyAreaName = signal<string | null>(null);
   readonly query: DatasetQuery = {
     area: "",
     development_type: "",
     land_use: ""
   };
+  selectedBaseMap: "Satelit" | "Topografi" | "Jalan" = "Satelit";
 
   private map?: OlMap;
   private pendingFeatureCollection: Record<string, unknown> | null = null;
+  private rawStudyAreaCollection: Record<string, unknown> | null = null;
   private readonly areaStatus = new Map<string, AssessmentSummary["status"]>();
+  private readonly studyAreaColors = new Map<string, string>();
+  private readonly geoStudyNameByKey = new Map<string, string>();
   private readonly defaultCenter = fromLonLat([101.38, 4.47]);
   private readonly defaultZoom = 10;
+  private didFitStudyAreas = false;
+  private readonly enterprisePalette = [
+    "#19A7CE",
+    "#7E57C2",
+    "#2E7D32",
+    "#E3A008",
+    "#C2410C",
+    "#2563EB",
+    "#DB2777",
+    "#0F766E",
+    "#9333EA",
+    "#64748B"
+  ];
+  private readonly studyAreaAliases: Record<string, string> = {
+    "kecil lojing": "Lojing",
+    lojing: "Lojing",
+    "cameron highland": "Cameron Highlands",
+    "cameron highlands": "Cameron Highlands",
+    "hulu telom": "Cameron Highlands",
+    "tanah rata": "Cameron Highlands",
+    ringlet: "Cameron Highlands",
+    "batang padang": "Batang Padang",
+    kampar: "Kampar",
+    teja: "Kampar",
+    kinta: "Kinta",
+    "hulu kinta": "Kinta",
+    "sungai raia": "Kinta",
+    lipis: "Lipis",
+    "ulu jelai": "Lipis"
+  };
 
   ngOnInit(): void {
+    this.loadStudyAreas();
     this.load();
   }
 
   private createMap(target: HTMLDivElement): void {
+    this.imageryLayer.setZIndex(0);
+    this.topoLayer.setZIndex(0);
+    this.streetLayer.setZIndex(0);
+    this.boundaryLabelLayer.setZIndex(2);
+    this.roadLabelLayer.setZIndex(3);
+    this.studyAreaLayer.setZIndex(5);
+    this.layer.setZIndex(10);
+    this.setBaseMap(this.selectedBaseMap);
     this.map = new OlMap({
       target,
-      layers: [new TileLayer({ source: new OSM() }), this.layer],
+      layers: [
+        this.imageryLayer,
+        this.topoLayer,
+        this.streetLayer,
+        this.boundaryLabelLayer,
+        this.roadLabelLayer,
+        this.studyAreaLayer,
+        this.layer
+      ],
+      controls: defaultControls({ zoom: false }),
       view: new View({
         center: this.defaultCenter,
         zoom: this.defaultZoom
@@ -237,18 +376,32 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
 
     this.map.on("singleclick", (event) => {
-      const feature = this.map?.forEachFeatureAtPixel(event.pixel, (candidate) => candidate);
-      if (!feature) {
-        this.selectedFeature.set(null);
+      const pointFeature = this.map?.forEachFeatureAtPixel(event.pixel, (candidate) => candidate, {
+        layerFilter: (candidateLayer) => candidateLayer === this.layer
+      });
+      if (pointFeature) {
+        const props = { ...(pointFeature as { getProperties: () => Row }).getProperties() };
+        delete props["geometry"];
+        this.selectedFeature.set(props);
+        this.assessment.set(this.buildAssessmentForArea(this.rows(), this.featureArea(props)));
         return;
       }
-      const props = { ...(feature as { getProperties: () => Row }).getProperties() };
-      delete props["geometry"];
-      this.selectedFeature.set(props);
-      this.assessment.set(this.buildAssessmentForArea(this.rows(), this.featureArea(props)));
+      const studyAreaFeature = this.map?.forEachFeatureAtPixel(event.pixel, (candidate) => candidate, {
+        layerFilter: (candidateLayer) => candidateLayer === this.studyAreaLayer
+      }) as StudyAreaFeature | undefined;
+      if (studyAreaFeature) {
+        this.selectStudyAreaFeature(studyAreaFeature, true);
+        return;
+      }
+      if (this.selectedStudyAreaName()) {
+        this.selectStudyAreaByName(null);
+      } else {
+        this.selectedFeature.set(null);
+      }
     });
 
     setTimeout(() => this.map?.updateSize());
+    this.renderStudyAreas();
     if (this.pendingFeatureCollection) {
       this.renderMap(this.pendingFeatureCollection);
     }
@@ -271,13 +424,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return;
     }
     const features = this.source.getFeatures();
+    const studyAreaFeatures = this.studyAreaSource.getFeatures();
+    if (studyAreaFeatures.length > 0) {
+      const extent = this.studyAreaSource.getExtent();
+      if (extent) {
+        this.map.getView().fit(extent, { padding: [110, 150, 110, 150], maxZoom: 8, duration: 250 });
+      }
+      return;
+    }
     if (features.length === 0) {
       this.map.getView().animate({ center: this.defaultCenter, zoom: this.defaultZoom, duration: 180 });
       return;
     }
     const extent = this.source.getExtent();
     if (extent) {
-      this.map.getView().fit(extent, { padding: [48, 48, 48, 48], maxZoom: 13, duration: 250 });
+      this.map.getView().fit(extent, { padding: [80, 80, 80, 80], maxZoom: 12, duration: 250 });
     }
   }
 
@@ -285,9 +446,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.layer.setVisible(!this.layer.getVisible());
   }
 
+  setBaseMap(baseMap: "Satelit" | "Topografi" | "Jalan"): void {
+    this.selectedBaseMap = baseMap;
+    this.imageryLayer.setVisible(baseMap === "Satelit");
+    this.topoLayer.setVisible(baseMap === "Topografi");
+    this.streetLayer.setVisible(baseMap === "Jalan");
+    this.boundaryLabelLayer.setVisible(baseMap === "Satelit");
+    this.roadLabelLayer.setVisible(baseMap === "Satelit");
+  }
+
+  openFullMap(): void {
+    this.router.navigateByUrl("/map");
+  }
+
   load(): void {
     this.loading.set(true);
     this.selectedFeature.set(null);
+    this.selectedStudyAreaName.set(null);
     forkJoin({
       overview: this.api.dashboard(this.query),
       ecc: this.api.dataset<Row>("ecc", { ...this.query, page_size: 500 }),
@@ -298,6 +473,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.rows.set(ecc.items);
         this.buildAreaStatus(ecc.items);
         this.assessment.set(this.buildAssessment(ecc.items));
+        this.renderStudyAreas();
         this.renderMap(points);
         this.loading.set(false);
       },
@@ -357,10 +533,95 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (parsed.length > 0) {
       const extent = this.source.getExtent();
       if (extent) {
-        this.map.getView().fit(extent, { padding: [48, 48, 48, 48], maxZoom: 13, duration: 250 });
+        this.map.getView().fit(extent, { padding: [80, 80, 80, 80], maxZoom: 12, duration: 250 });
       }
     }
     setTimeout(() => this.map?.updateSize());
+  }
+
+  selectStudyAreaByName(name: string | null): void {
+    this.selectedStudyAreaName.set(name || null);
+    this.studyAreaLayer.changed();
+    if (this.pendingFeatureCollection) {
+      this.renderMap(this.pendingFeatureCollection);
+    }
+    if (name) {
+      this.assessment.set(this.buildAssessmentForStudyArea(this.rows(), name));
+      this.fitStudyArea(name);
+    } else {
+      this.assessment.set(this.buildAssessment(this.rows()));
+      this.resetMapView();
+    }
+  }
+
+  private loadStudyAreas(): void {
+    this.http.get<Record<string, unknown>>("assets/geo/malaysia.district.geojson").subscribe({
+      next: (collection) => {
+        this.rawStudyAreaCollection = collection;
+        this.renderStudyAreas();
+      },
+      error: () => this.studyAreaLegend.set([])
+    });
+  }
+
+  private renderStudyAreas(): void {
+    if (!this.rawStudyAreaCollection || this.rows().length === 0) {
+      return;
+    }
+    const allFeatures = new GeoJSON().readFeatures(this.rawStudyAreaCollection, { featureProjection: "EPSG:3857" }) as StudyAreaFeature[];
+    this.geoStudyNameByKey.clear();
+    for (const feature of allFeatures) {
+      const sourceName = this.studyAreaSourceName(feature);
+      const displayName = this.studyAreaDisplayName(feature);
+      this.geoStudyNameByKey.set(this.normalize(sourceName), displayName);
+      this.geoStudyNameByKey.set(this.normalize(displayName), displayName);
+    }
+    const targetNames = new Set(this.rows().map((row) => this.studyAreaNameForRow(row)).filter(Boolean));
+    const renderedFeatures = allFeatures
+      .filter((feature) => targetNames.has(this.studyAreaDisplayName(feature)))
+      .sort((a, b) => this.studyAreaDisplayName(a).localeCompare(this.studyAreaDisplayName(b)));
+    this.assignStudyAreaColors(renderedFeatures);
+    this.studyAreaSource.clear();
+    this.studyAreaSource.addFeatures(renderedFeatures);
+    this.studyAreaLegend.set(renderedFeatures.map((feature) => {
+      const name = this.studyAreaDisplayName(feature);
+      return { name, color: this.studyAreaColors.get(name) ?? this.enterprisePalette[0] };
+    }));
+    this.studyAreaLayer.changed();
+    if (!this.didFitStudyAreas && renderedFeatures.length > 0) {
+      this.didFitStudyAreas = true;
+      const extent = this.studyAreaSource.getExtent();
+      if (extent) {
+        setTimeout(() => this.map?.getView().fit(extent, { padding: [110, 150, 110, 150], maxZoom: 8, duration: 250 }));
+      }
+    }
+  }
+
+  private selectStudyAreaFeature(feature: StudyAreaFeature, fit = false): void {
+    const name = this.studyAreaDisplayName(feature);
+    this.selectedStudyAreaName.set(name);
+    this.assessment.set(this.buildAssessmentForStudyArea(this.rows(), name));
+    this.studyAreaLayer.changed();
+    if (this.pendingFeatureCollection) {
+      this.renderMap(this.pendingFeatureCollection);
+    }
+    if (fit) {
+      this.fitFeature(feature);
+    }
+  }
+
+  private fitStudyArea(name: string): void {
+    const feature = this.studyAreaSource.getFeatures().find((candidate) => this.studyAreaDisplayName(candidate as StudyAreaFeature) === name) as StudyAreaFeature | undefined;
+    if (feature) {
+      this.fitFeature(feature);
+    }
+  }
+
+  private fitFeature(feature: StudyAreaFeature): void {
+    const geometry = feature.getGeometry();
+    if (geometry) {
+      this.map?.getView().fit(geometry.getExtent(), { padding: [95, 95, 95, 95], maxZoom: 10, duration: 280 });
+    }
   }
 
   private changeZoom(delta: number): void {
@@ -376,6 +637,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const props = (feature["properties"] ?? {}) as Row;
     return (
       (!this.query.area || props["area"] === this.query.area || props["kawasan_kajian"] === this.query.area) &&
+      (!this.selectedStudyAreaName() || this.studyAreaNameForRow(props) === this.selectedStudyAreaName()) &&
       (!this.query.development_type || props["jenis_pembangunan"] === this.query.development_type) &&
       (!this.query.land_use || props["guna_tanah"] === this.query.land_use)
     );
@@ -393,26 +655,41 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  private studyAreaStyle(feature: FeatureLike): Style {
+    const name = this.studyAreaDisplayName(feature as StudyAreaFeature);
+    const color = this.studyAreaColors.get(name) ?? this.enterprisePalette[0];
+    const selected = this.selectedStudyAreaName() === name;
+    return new Style({
+      fill: new Fill({ color: this.hexToRgba(color, selected ? 0.76 : 0.52) }),
+      stroke: new Stroke({ color: "#FFFFFF", width: selected ? 4 : 2 }),
+      zIndex: selected ? 9 : 5
+    });
+  }
+
   private statusForFeature(feature: FeatureLike): AssessmentSummary["status"] {
     const area = String(feature.get("area") || feature.get("kawasan_kajian") || "");
-    return this.areaStatus.get(area) ?? this.statusForEcc(this.num(feature.get("ecc")));
+    return this.areaStatus.get(area) ?? this.statusForLoad(
+      this.num(feature.get("bil_penduduk")) + this.num(feature.get("bil_pengunjung")),
+      this.num(feature.get("ecc"))
+    );
   }
 
   private buildAreaStatus(rows: Row[]): void {
     this.areaStatus.clear();
-    const buckets = new Map<string, { sum: number; count: number }>();
+    const buckets = new Map<string, { capacity: number; population: number; visitors: number }>();
     for (const row of rows) {
       const area = String(row["area"] || row["kawasan_kajian"] || "");
       if (!area) {
         continue;
       }
-      const current = buckets.get(area) ?? { sum: 0, count: 0 };
-      current.sum += this.num(row["ecc"]);
-      current.count += 1;
+      const current = buckets.get(area) ?? { capacity: 0, population: 0, visitors: 0 };
+      current.capacity += this.num(row["ecc"]);
+      current.population = Math.max(current.population, this.num(row["bil_penduduk"]));
+      current.visitors = Math.max(current.visitors, this.num(row["bil_pengunjung"]));
       buckets.set(area, current);
     }
     for (const [area, bucket] of buckets.entries()) {
-      this.areaStatus.set(area, this.statusForEcc(bucket.count ? bucket.sum / bucket.count : 0));
+      this.areaStatus.set(area, this.statusForLoad(bucket.population + bucket.visitors, bucket.capacity));
     }
   }
 
@@ -427,12 +704,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private buildAssessmentForArea(rows: Row[], area: string): AssessmentSummary {
     const scoped = rows.filter((row) => String(row["area"] || row["kawasan_kajian"] || "") === area);
     const sourceRows = scoped.length ? scoped : rows;
-    const pcc = this.average(sourceRows, "pcc");
-    const rcc = this.average(sourceRows, "rcc");
-    const ecc = this.average(sourceRows, "ecc");
-    const population = this.sum(sourceRows, "bil_penduduk");
-    const visitors = this.sum(sourceRows, "bil_pengunjung");
-    const status = this.statusForEcc(ecc);
+    const pcc = this.sum(sourceRows, "pcc");
+    const rcc = this.sum(sourceRows, "rcc");
+    const ecc = this.sum(sourceRows, "ecc");
+    const population = this.max(sourceRows, "bil_penduduk");
+    const visitors = this.max(sourceRows, "bil_pengunjung");
+    const load = population + visitors;
+    const saturationPct = this.saturationPct(load, ecc);
+    const capacityBalance = ecc - load;
+    const status = this.statusForLoad(load, ecc);
     return {
       area,
       pcc,
@@ -440,9 +720,43 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ecc,
       population,
       visitors,
+      load,
+      saturationPct,
+      capacityBalance,
       status,
       statusClass: status === "Kritikal" ? "status-critical" : status === "Sederhana" ? "status-moderate" : "status-suitable",
-      recommendation: this.recommendation(status)
+      recommendation: this.recommendation(status, saturationPct, capacityBalance)
+    };
+  }
+
+  private buildAssessmentForStudyArea(rows: Row[], studyArea: string): AssessmentSummary {
+    const scoped = rows.filter((row) => this.studyAreaNameForRow(row) === studyArea);
+    return this.buildAssessmentFromRows(scoped.length ? scoped : rows, studyArea);
+  }
+
+  private buildAssessmentFromRows(sourceRows: Row[], area: string): AssessmentSummary {
+    const pcc = this.sum(sourceRows, "pcc");
+    const rcc = this.sum(sourceRows, "rcc");
+    const ecc = this.sum(sourceRows, "ecc");
+    const population = this.max(sourceRows, "bil_penduduk");
+    const visitors = this.max(sourceRows, "bil_pengunjung");
+    const load = population + visitors;
+    const saturationPct = this.saturationPct(load, ecc);
+    const capacityBalance = ecc - load;
+    const status = this.statusForLoad(load, ecc);
+    return {
+      area,
+      pcc,
+      rcc,
+      ecc,
+      population,
+      visitors,
+      load,
+      saturationPct,
+      capacityBalance,
+      status,
+      statusClass: status === "Kritikal" ? "status-critical" : status === "Sederhana" ? "status-moderate" : "status-suitable",
+      recommendation: this.recommendation(status, saturationPct, capacityBalance)
     };
   }
 
@@ -458,24 +772,111 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return [...totals.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "";
   }
 
-  private statusForEcc(ecc: number): AssessmentSummary["status"] {
-    if (ecc >= 1800) {
+  private assignStudyAreaColors(features: StudyAreaFeature[]): void {
+    this.studyAreaColors.clear();
+    const assigned = new Map<string, string>();
+    for (const feature of features) {
+      const name = this.studyAreaDisplayName(feature);
+      const preferredIndex = this.hash(name) % this.enterprisePalette.length;
+      const orderedPalette = [
+        ...this.enterprisePalette.slice(preferredIndex),
+        ...this.enterprisePalette.slice(0, preferredIndex)
+      ];
+      assigned.set(name, orderedPalette.find((color) => ![...assigned.values()].includes(color)) ?? orderedPalette[0]);
+    }
+    for (const [name, color] of assigned.entries()) {
+      this.studyAreaColors.set(name, color);
+    }
+  }
+
+  private studyAreaNameForRow(row: Row): string {
+    const candidates = [row["kawasan_kajian"], row["area"]];
+    for (const value of candidates) {
+      const resolved = this.resolveStudyAreaName(value);
+      if (resolved) {
+        return resolved;
+      }
+    }
+    return "";
+  }
+
+  private resolveStudyAreaName(value: unknown): string {
+    const key = this.normalize(value);
+    if (!key) {
+      return "";
+    }
+    if (this.studyAreaAliases[key]) {
+      return this.studyAreaAliases[key];
+    }
+    return this.geoStudyNameByKey.get(key) ?? "";
+  }
+
+  private studyAreaSourceName(feature: StudyAreaFeature): string {
+    const props = feature.getProperties() as Row;
+    return String(props["name"] || props["district"] || props["daerah"] || props["DISTRICT"] || props["NAM"] || "");
+  }
+
+  private studyAreaDisplayName(feature: StudyAreaFeature): string {
+    const sourceName = this.studyAreaSourceName(feature);
+    return this.studyAreaAliases[this.normalize(sourceName)] ?? sourceName;
+  }
+
+  private hexToRgba(hex: string, alpha: number): string {
+    const value = hex.replace("#", "");
+    const red = parseInt(value.slice(0, 2), 16);
+    const green = parseInt(value.slice(2, 4), 16);
+    const blue = parseInt(value.slice(4, 6), 16);
+    return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+  }
+
+  private hash(value: string): number {
+    return [...value].reduce((total, char) => ((total << 5) - total + char.charCodeAt(0)) >>> 0, 0);
+  }
+
+  private normalize(value: unknown): string {
+    return String(value ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+  }
+
+  minPercent(value: number): number {
+    return Math.min(100, Math.max(0, value));
+  }
+
+  statusColor(status: AssessmentSummary["status"]): string {
+    return status === "Kritikal" ? "#D32F2F" : status === "Sederhana" ? "#FBC02D" : "#16A34A";
+  }
+
+  private statusForLoad(load: number, capacity: number): AssessmentSummary["status"] {
+    if (capacity <= 0 && load > 0) {
       return "Kritikal";
     }
-    if (ecc >= 900) {
+    if (capacity <= 0) {
+      return "Sesuai";
+    }
+    const ratio = load / capacity;
+    if (ratio >= 1) {
+      return "Kritikal";
+    }
+    if (ratio >= 0.7) {
       return "Sederhana";
     }
     return "Sesuai";
   }
 
-  private recommendation(status: AssessmentSummary["status"]): string {
+  private saturationPct(load: number, capacity: number): number {
+    return capacity > 0 ? Number(((load / capacity) * 100).toFixed(2)) : 0;
+  }
+
+  private recommendation(status: AssessmentSummary["status"], saturationPct: number, capacityBalance: number): string {
     if (status === "Kritikal") {
-      return "Kapasiti mampu dukung kawasan ini menghampiri tahap tepu. Sebarang pembangunan baharu perlu dinilai dengan lebih terperinci.";
+      return `Kawasan ini melebihi kapasiti tampungan (${saturationPct.toFixed(2)}%). Baki kapasiti ${this.formatNumber(capacityBalance)}; pembangunan baharu perlu ditahan atau diaudit semula.`;
     }
     if (status === "Sederhana") {
-      return "Kawasan ini masih boleh dipertimbangkan untuk pembangunan terpilih, tertakluk kepada kawalan intensiti dan semakan infrastruktur.";
+      return `Kawasan ini berada pada tahap berjaga-jaga (${saturationPct.toFixed(2)}%). Pembangunan terpilih masih boleh dipertimbang dengan kawalan intensiti.`;
     }
-    return "Kawasan ini berada pada tahap sesuai untuk perancangan terkawal dengan pemantauan berkala terhadap perubahan penduduk dan guna tanah.";
+    return `Kawasan ini masih di bawah kapasiti tampungan (${saturationPct.toFixed(2)}%). Teruskan pemantauan berkala terhadap penduduk, pengunjung dan guna tanah.`;
   }
 
   private average(rows: Row[], key: string): number {
@@ -487,6 +888,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private sum(rows: Row[], key: string): number {
     return rows.reduce((total, row) => total + this.num(row[key]), 0);
+  }
+
+  private max(rows: Row[], key: string): number {
+    return rows.reduce((highest, row) => Math.max(highest, this.num(row[key])), 0);
   }
 
   private num(value: unknown): number {

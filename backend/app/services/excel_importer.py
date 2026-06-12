@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from app.models import Base
 from app.models.analytics import EccSpkMap, Ketepuan, OptimumMap, OverallPopulation, ZoningMap
 from app.models.imports import ImportBatch
+from app.services.capacity_audit import CapacityAuditService
 from app.utils.normalization import clean_value, normalize_column_name
 
 
@@ -78,6 +79,7 @@ class ExcelImporter:
             self.db.add(batch)
             self.db.commit()
             self.db.refresh(batch)
+            self._run_capacity_audit(batch)
             return batch
         except Exception as exc:
             self.db.rollback()
@@ -145,3 +147,12 @@ class ExcelImporter:
         content = json.dumps({"sheet": sheet_name, "row": payload}, sort_keys=True, default=str)
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
+    def _run_capacity_audit(self, batch: ImportBatch) -> None:
+        try:
+            run = CapacityAuditService(self.db).run(import_batch_id=batch.id, triggered_by="excel_import")
+            batch.message = f"Excel import completed; capacity audit run #{run.id} completed"
+        except Exception as exc:
+            batch.message = f"Excel import completed; capacity audit failed: {exc}"
+        self.db.add(batch)
+        self.db.commit()
+        self.db.refresh(batch)

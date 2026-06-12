@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.security import get_password_hash
 from app.models.auth import Role, User
 from app.repositories.users import UserRepository
+from app.services.capacity_seed import CapacitySeedService
 
 
 DEMO_USERS = [
@@ -35,4 +36,4 @@ def seed_demo_data(db: Session) -> None:
         repo.add(user)
 
     db.commit()
-
+    CapacitySeedService(db).ensure_seed_data()

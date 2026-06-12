@@ -40,6 +40,36 @@ Header normalization handles fields such as:
 - `Senario 1: Guna Tanah Zoning RT (Zoning)` to `guna_tanah`
 - `Senario : Guna Tanah Optimum (Optimum)` to `guna_tanah`
 
+After a successful import, `CapacityAuditService` runs the RW CEKAL formula audit for the imported batch. The audit writes calculated PCC/RCC/ECC values to `capacity_calculation_results` and keeps source workbook values unchanged.
+
+## Capacity Formula Engine
+
+The v1 formula is implemented in `backend/app/services/capacity_formula.py`:
+
+```text
+A_msq = A_ha * 10000
+PCC = ROUND((A_msq / Au) * Rf, 0)
+RCC = ROUND(PCC * CF, 0)
+ECC = ROUND(RCC * MC, 0)
+```
+
+`capacity_factors` stores editable `CF` and `MC` values by `dataset_scope` and area. Factor lookup checks `area`, then `kawasan_kajian`, then wildcard `*`. This is intentional because the client workbook contains both detailed area names and broader study-area names.
+
+Run a manual audit through the API:
+
+```bash
+curl -X POST http://localhost:8001/api/capacity/recalculate \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d "{}"
+```
+
+Run formula unit tests:
+
+```bash
+PYTHONPATH=backend python3 -m unittest discover backend/tests
+```
+
 ## Adding A New Dataset API
 
 1. Add a SQLAlchemy model in `backend/app/models`.

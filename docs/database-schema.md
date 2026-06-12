@@ -10,6 +10,10 @@ The database uses PostgreSQL 17 with PostGIS enabled.
 | `roles` | RBAC roles: Admin, Planner, Analyst, Viewer |
 | `user_roles` | Many-to-many user role assignment |
 | `import_batches` | ETL activity logs and row counts |
+| `capacity_methodologies` | Active PCC/RCC/ECC formula version and JSON definition |
+| `capacity_factors` | Editable `CF` and `MC` master data by dataset scope and area |
+| `capacity_calculation_runs` | Formula audit/recalculation execution history |
+| `capacity_calculation_results` | Row-level stored-versus-calculated PCC/RCC/ECC audit results |
 
 ## Imported Workbook Tables
 
@@ -26,9 +30,41 @@ The database uses PostgreSQL 17 with PostGIS enabled.
 | View | Purpose |
 | --- | --- |
 | `superset_executive_kpi` | One-row executive KPI summary |
-| `superset_executive_area` | PCC, RCC, ECC, population, and status by area |
+| `superset_executive_area` | Area-level PCC, RCC, ECC, load, saturation, balance, and status |
 | `superset_population_trend` | Time-ready population growth series |
 | `superset_land_use_summary` | Aggregated land-use area and capacity metrics |
+| `superset_capacity_audit_summary` | Formula audit pass/warning/fail summary by run, dataset, and area |
+
+## Capacity Formula Audit
+
+Formula engine v1 keeps imported workbook values intact and writes calculated values to audit tables.
+
+```text
+A_msq = A_ha * 10000
+PCC = ROUND((A_msq / Au) * Rf, 0)
+RCC = ROUND(PCC * CF, 0)
+ECC = ROUND(RCC * MC, 0)
+```
+
+`capacity_factors.area` is matched against the imported row `area` first, then `kawasan_kajian`, then wildcard `*` if configured. Missing input produces `missing_input`; missing `CF/MC` produces `missing_factor`.
+
+## Capacity Status
+
+Area status is based on saturation, not average ECC:
+
+```text
+capacity_load = MAX(bil_penduduk) + MAX(bil_pengunjung)
+capacity = SUM(ecc)
+saturation_pct = capacity_load / capacity * 100
+```
+
+Status bands:
+
+- `Sesuai`: saturation below 70%.
+- `Sederhana`: saturation from 70% to below 100%.
+- `Kritikal`: saturation at or above 100%, or load exists with zero capacity.
+
+`bil_penduduk` and `bil_pengunjung` are repeated across detailed ECC rows, so status calculations use `MAX`, not `SUM`, for load.
 
 ## Schema Diagram
 
@@ -41,6 +77,10 @@ erDiagram
   import_batches ||--o{ optimum_map : imports
   import_batches ||--o{ ketepuan : imports
   import_batches ||--o{ overall_population : imports
+  import_batches ||--o{ capacity_calculation_runs : audits
+  capacity_methodologies ||--o{ capacity_factors : defines
+  capacity_methodologies ||--o{ capacity_calculation_runs : runs
+  capacity_calculation_runs ||--o{ capacity_calculation_results : produces
 
   users {
     int id PK
@@ -108,6 +148,25 @@ erDiagram
     string kawasan_kajian
     numeric normal_population_growth
     numeric injected_population_growth
+  }
+
+  capacity_factors {
+    int id PK
+    string dataset_scope
+    string area
+    numeric correction_factor
+    numeric management_capability
+    bool is_active
+  }
+
+  capacity_calculation_results {
+    int id PK
+    string dataset_scope
+    string record_area
+    numeric stored_pcc
+    numeric calculated_pcc
+    numeric pcc_delta
+    string status
   }
 ```
 

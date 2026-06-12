@@ -147,10 +147,15 @@ with app.app_context():
             chart_params(kpi.id, "big_number_total", metric=metric("average_rcc", "MAX", "Purata RCC"), y_axis_format=",.2f"),
         ),
         (
-            "Purata ECC",
+            "Purata Ketepuan",
             kpi,
             "big_number_total",
-            chart_params(kpi.id, "big_number_total", metric=metric("average_ecc", "MAX", "Purata ECC"), y_axis_format=",.2f"),
+            chart_params(
+                kpi.id,
+                "big_number_total",
+                metric=metric("average_saturation_pct", "MAX", "Purata Ketepuan (%)"),
+                y_axis_format=",.2f",
+            ),
         ),
         (
             "PCC vs RCC vs ECC Mengikut Kawasan",
