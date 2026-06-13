@@ -281,6 +281,38 @@ Jadi pendekatan terbaik ialah phased implementation.
 - Export laporan mesyuarat.
 - API integration ke MUO/SUO/LUO jika diperlukan.
 
+## TODO Rujukan Pantas
+
+Status rujukan pada 12 Jun 2026.
+
+### Sudah siap atau sudah ada asas
+
+- [x] Formula audit v1 untuk `PCC`, `RCC` dan `ECC` sudah dibina sebagai audit layer.
+- [x] Jadual audit utama sudah ada: `capacity_methodologies`, `capacity_factors`, `capacity_calculation_runs`, `capacity_calculation_results`.
+- [x] API untuk methodology, factor, recalculate, run history dan audit results sudah ada.
+- [x] Paparan Angular untuk formula aktif, audit run summary, audit table dan faktor `CF/MC` sudah ada.
+- [x] Status kapasiti v1 sudah ditukar kepada logik ketepuan area-level.
+- [x] Peta sudah ada polygon overlay asas melalui GeoJSON kawasan kajian.
+
+### Masih perlu dibuat
+
+- [ ] Model data indikator penuh seperti `capacity_indicators`, `capacity_indicator_values`, `management_capability_scores`, `correction_factors` dan `capacity_scenarios`.
+- [ ] Pengiraan `CF` dan `MC` terus daripada indikator metodologi penuh, bukan hanya factor master data awal.
+- [ ] Layer polygon sebenar untuk guna tanah semasa, zoning, komited dan lapisan analisis spatial lain.
+- [ ] Layer catalog, metadata layer, topology validation dan spatial overlay yang selari dengan Jilid IV.
+- [ ] Modul `Cadangan Pembangunan` untuk semakan projek, polygon, HVI, KSAS, kesesuaian tanah dan impak kepada kapasiti.
+- [ ] Workflow ulasan/syarat awal untuk PBT, JPW dan semakan pembangunan.
+- [ ] Dashboard pemantauan rasmi yang fokus kepada watchlist ketepuan, data freshness dan kelengkapan indikator.
+
+### Masih perlu pengesahan client atau data sumber
+
+- [ ] Sahkan formula operasi muktamad `PCC`, `RCC` dan `ECC`, termasuk konflik kecil dalam teks Jilid III.
+- [ ] Sahkan sama ada outlier workbook, terutama beberapa baris Zoning Lojing, ialah manual override atau ralat data.
+- [ ] Sahkan sama ada threshold ketepuan `70%` dan `100%` diterima sebagai dasar operasi rasmi.
+- [ ] Dapatkan shapefile atau geodatabase sebenar, bukan hanya rujukan PDF.
+- [ ] Dapatkan data agensi untuk indikator alam sekitar, utiliti, tadbir urus, ekonomi, pelancongan dan lain-lain.
+- [ ] Tetapkan governance untuk siapa boleh upload, semak dan luluskan indikator.
+
 ## Kesimpulan
 
 Laporan client sangat berguna dan patut dijadikan blueprint metodologi. Sistem CCAP kita sekarang sudah berada pada landasan yang betul, tetapi masih pada tahap analytics/dashboard berasaskan data siap import. Untuk benar-benar selari dengan RW CEKAL, fokus seterusnya patut beralih kepada formula engine, data indikator, GIS polygon layer, dan workflow semakan pembangunan.
